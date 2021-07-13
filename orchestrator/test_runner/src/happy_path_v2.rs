@@ -189,7 +189,7 @@ pub async fn deploy_cosmos_representing_erc20_and_check_adoption(
         ending_event_nonce
     );
 
-    start_orchestrators(keys.clone(), gravity_address, validator_out).await;
+    start_orchestrators(keys.clone(), gravity_address, validator_out, false).await;
 
     let start = Instant::now();
     // the erc20 representing the cosmos asset on Ethereum

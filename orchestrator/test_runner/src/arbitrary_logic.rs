@@ -17,7 +17,7 @@ pub async fn arbitrary_logic_test(
     keys: Vec<ValidatorKeys>,
     gravity_address: EthAddress,
 ) {
-    start_orchestrators(keys, gravity_address, false).await;
+    start_orchestrators(keys, gravity_address, false, false).await;
 
     delay_for(TOTAL_TIMEOUT).await;
 }

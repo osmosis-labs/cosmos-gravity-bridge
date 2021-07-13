@@ -11,7 +11,7 @@ pub async fn validator_set_stress_test(
     keys: Vec<ValidatorKeys>,
     gravity_address: EthAddress,
 ) {
-    start_orchestrators(keys.clone(), gravity_address, false).await;
+    start_orchestrators(keys.clone(), gravity_address, false, false).await;
 
     for _ in 0u32..10 {
         test_valset_update(web30, contact, &keys, gravity_address).await;

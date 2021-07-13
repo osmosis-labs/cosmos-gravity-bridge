@@ -204,6 +204,7 @@ pub async fn start_orchestrators(
     keys: Vec<ValidatorKeys>,
     gravity_address: EthAddress,
     validator_out: bool,
+    enable_relay_market: bool,
 ) {
     // used to break out of the loop early to simulate one validator
     // not running an Orchestrator
@@ -233,6 +234,8 @@ pub async fn start_orchestrators(
                 ADDRESS_PREFIX.as_str(),
             )
             .unwrap();
+            let mut orch_config = GravityBridgeToolsConfig::default();
+            orch_config.relayer.market_enabled = enable_relay_market;
             let fut = orchestrator_main_loop(
                 k.orch_key,
                 k.eth_key,
@@ -241,7 +244,7 @@ pub async fn start_orchestrators(
                 grpc_client,
                 gravity_address,
                 get_fee(),
-                GravityBridgeToolsConfig::default(),
+                orch_config,
             );
             let system = System::new();
             system.block_on(fut);

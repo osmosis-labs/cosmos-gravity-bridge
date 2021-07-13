@@ -36,7 +36,7 @@ pub async fn happy_path_test(
 ) {
     let mut grpc_client = grpc_client;
 
-    start_orchestrators(keys.clone(), gravity_address, validator_out).await;
+    start_orchestrators(keys.clone(), gravity_address, validator_out, false).await;
 
     // bootstrapping tests finish here and we move into operational tests
 
