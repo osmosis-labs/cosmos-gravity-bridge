@@ -2,6 +2,12 @@
 
 set -eo pipefail
 
+# If these fail run the first run commands in the module README.md
+# make sure $GO/bin is in your PATH
+which protoc-gen-gocosmos
+which protoc-gen-go-grpc
+which buf
+
 proto_dirs=$(find ./proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
 for dir in $proto_dirs; do
   buf protoc \
