@@ -199,6 +199,28 @@ func (k Keeper) GetDelegateKeys(ctx sdk.Context) []*types.MsgSetOrchestratorAddr
 	return result
 }
 
+func (k Keeper) GetResetBridgeState(ctx sdk.Context) bool {
+	var state bool
+	k.paramSpace.Get(ctx, types.ParamStoreResetBridgeState, &state)
+	return state
+}
+
+func (k Keeper) GetResetBridgeNonce(ctx sdk.Context) int64 {
+	var nonce int64
+	k.paramSpace.Get(ctx, types.ParamStoreResetBridgeNonce, &nonce)
+	return nonce
+}
+
+func (k Keeper) SetResetBridgeState(ctx sdk.Context, state bool) {
+	ctx.Logger().Info(fmt.Sprintf("Setting resetBridgeState=%v", state))
+	k.paramSpace.Set(ctx, types.ParamStoreResetBridgeState, state)
+}
+
+func (k Keeper) SetResetBridgeNonce(ctx sdk.Context, nonce int64) {
+	ctx.Logger().Info(fmt.Sprintf("SetResetBridgeNonce: Setting resetBridgeNonce=%v", nonce))
+	k.paramSpace.Set(ctx, types.ParamStoreResetBridgeNonce, nonce)
+}
+
 /////////////////////////////
 //   Logic Call Slashing   //
 /////////////////////////////

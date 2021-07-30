@@ -230,7 +230,8 @@ func (k Keeper) LogicConfirms(
 // this allows eth oracles to figure out where they left off
 func (k Keeper) LastEventNonceByAddr(
 	c context.Context,
-	req *types.QueryLastEventNonceByAddrRequest) (*types.QueryLastEventNonceByAddrResponse, error) {
+	req *types.QueryLastEventNonceByAddrRequest,
+) (*types.QueryLastEventNonceByAddrResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 	var ret types.QueryLastEventNonceByAddrResponse
 	addr, err := sdk.AccAddressFromBech32(req.Address)

@@ -22,6 +22,7 @@ use orchestrator::main_loop::orchestrator_main_loop;
 use rand::Rng;
 use std::thread;
 use std::time::Instant;
+use tonic::transport::Channel;
 use web30::jsonrpc::error::Web3Error;
 use web30::{client::Web3, types::SendTxOption};
 
@@ -254,27 +255,8 @@ pub async fn start_orchestrators(
             .unwrap();
         // we have only one actual futures executor thread (see the actix runtime tag on our main function)
         // but that will execute all the orchestrators in our test in parallel
-        thread::spawn(move || {
-            let web30 = web30::client::Web3::new(ETH_NODE.as_str(), OPERATION_TIMEOUT);
-            let contact = Contact::new(
-                COSMOS_NODE_GRPC.as_str(),
-                OPERATION_TIMEOUT,
-                ADDRESS_PREFIX.as_str(),
-            )
-            .unwrap();
-            let fut = orchestrator_main_loop(
-                k.orch_key,
-                k.eth_key,
-                web30,
-                contact,
-                grpc_client,
-                gravity_address,
-                get_fee(),
-                config,
-            );
-            let system = System::new();
-            system.block_on(fut);
-        });
+        start_orchestrator(&k, grpc_client, gravity_address, config);
+
         // used to break out of the loop early to simulate one validator
         // not running an orchestrator
         count += 1;
@@ -282,6 +264,36 @@ pub async fn start_orchestrators(
             break;
         }
     }
+}
+
+pub fn start_orchestrator(
+    k: &ValidatorKeys,
+    grpc_client: GravityQueryClient<Channel>,
+    gravity_address: EthAddress,
+    config: GravityBridgeToolsConfig,
+) {
+    let keys = k.clone();
+    thread::spawn(move || {
+        let web30 = web30::client::Web3::new(ETH_NODE.as_str(), OPERATION_TIMEOUT);
+        let contact = Contact::new(
+            COSMOS_NODE_GRPC.as_str(),
+            OPERATION_TIMEOUT,
+            ADDRESS_PREFIX.as_str(),
+        )
+        .unwrap();
+        let fut = orchestrator_main_loop(
+            keys.orch_key,
+            keys.eth_key,
+            web30,
+            contact,
+            grpc_client,
+            gravity_address,
+            get_fee(),
+            config,
+        );
+        let system = System::new();
+        system.block_on(fut);
+    });
 }
 
 /// Creates a proposal to change the params of our test chain

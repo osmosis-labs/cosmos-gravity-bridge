@@ -4,11 +4,13 @@ go 1.15
 
 require (
 	github.com/cosmos/cosmos-sdk v0.42.1
+	github.com/cosmos/iavl v0.15.3
 	github.com/ethereum/go-ethereum v1.10.3
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
+	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
 	github.com/spf13/cast v1.3.1

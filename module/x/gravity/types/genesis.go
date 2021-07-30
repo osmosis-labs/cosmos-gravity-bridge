@@ -66,6 +66,12 @@ var (
 	// to a relayer when they relay a valset
 	ParamStoreValsetRewardAmount = []byte("ValsetReward")
 
+	// ResetBridgeState boolean indicates the oracle events of the bridge history should be reset
+	ParamStoreResetBridgeState = []byte("ResetBridgeState")
+
+	// ResetBridgeHeight stores the nonce after which oracle events should be discarded when resetting the bridge
+	ParamStoreResetBridgeNonce = []byte("ResetBridgeNonce")
+
 	// Ensure that params implements the proper interface
 	_ paramtypes.ParamSet = &Params{
 		GravityId:                    "",
@@ -134,9 +140,15 @@ func DefaultParams() *Params {
 		SlashFractionValset:          sdk.NewDec(1).Quo(sdk.NewDec(1000)),
 		SlashFractionBatch:           sdk.NewDec(1).Quo(sdk.NewDec(1000)),
 		SlashFractionLogicCall:       sdk.NewDec(1).Quo(sdk.NewDec(1000)),
-		UnbondSlashingValsetsWindow:  10000,
 		SlashFractionBadEthSignature: sdk.NewDec(1).Quo(sdk.NewDec(1000)),
-		ValsetReward:                 sdk.Coin{Denom: "", Amount: sdk.ZeroInt()},
+		UnbondSlashingValsetsWindow:  10000,
+		// this coin is invalid, we use that as the 'no reward' state
+		ValsetReward: sdk.Coin{
+			Denom:  "",
+			Amount: sdk.ZeroInt(),
+		},
+		ResetBridgeState: false,
+		ResetBridgeNonce: -1,
 	}
 }
 
@@ -190,7 +202,12 @@ func (p Params) ValidateBasic() error {
 	if err := validateValsetRewardAmount(p.ValsetReward); err != nil {
 		return sdkerrors.Wrap(err, "ValsetReward amount")
 	}
-
+	if err := validateResetBridgeState(p.ResetBridgeState); err != nil {
+		return sdkerrors.Wrap(err, "Reset Bridge State")
+	}
+	if err := validateResetBridgeNonce(p.ResetBridgeNonce); err != nil {
+		return sdkerrors.Wrap(err, "Reset Bridge Nonce")
+	}
 	return nil
 }
 
@@ -238,6 +255,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamStoreUnbondSlashingValsetsWindow, &p.UnbondSlashingValsetsWindow, validateUnbondSlashingValsetsWindow),
 		paramtypes.NewParamSetPair(ParamStoreSlashFractionBadEthSignature, &p.SlashFractionBadEthSignature, validateSlashFractionBadEthSignature),
 		paramtypes.NewParamSetPair(ParamStoreValsetRewardAmount, &p.ValsetReward, validateValsetRewardAmount),
+		paramtypes.NewParamSetPair(ParamStoreResetBridgeState, &p.ResetBridgeState, validateResetBridgeState),
+		paramtypes.NewParamSetPair(ParamStoreResetBridgeNonce, &p.ResetBridgeNonce, validateResetBridgeNonce),
 	}
 }
 
@@ -386,6 +405,20 @@ func validateSlashFractionBadEthSignature(i interface{}) error {
 func validateValsetRewardAmount(i interface{}) error {
 	if _, ok := i.(sdk.Coin); !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	return nil
+}
+
+func validateResetBridgeState(i interface{}) error {
+	if _, ok := i.(bool); !ok {
+		return fmt.Errorf("invalid parameter type %T", i)
+	}
+	return nil
+}
+
+func validateResetBridgeNonce(i interface{}) error {
+	if _, ok := i.(int64); !ok {
+		return fmt.Errorf("invalid parameter type %T", i)
 	}
 	return nil
 }

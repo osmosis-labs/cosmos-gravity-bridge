@@ -16,4 +16,5 @@ if [ ! -z "$ALCHEMY_ID" ]; then
 else
     echo "Alchemy API key not set under variable ALCHEMY_ID, not running ARBITRARY_LOGIC nor RELAY_MARKET"
 fi
+bash all-up-test.sh UNHALT_BRIDGE
 echo "All tests succeeded!"

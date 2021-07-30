@@ -1,6 +1,7 @@
 package gravity
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/althea-net/cosmos-gravity-bridge/module/x/gravity/keeper"
@@ -11,6 +12,7 @@ import (
 // EndBlocker is called at the end of every block
 func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 	params := k.GetParams(ctx)
+	unhaltBridge(ctx, k, params)
 	slashing(ctx, k)
 	attestationTally(ctx, k)
 	cleanupTimedOutBatches(ctx, k)
@@ -18,6 +20,25 @@ func EndBlocker(ctx sdk.Context, k keeper.Keeper) {
 	createValsets(ctx, k)
 	pruneValsets(ctx, k, params)
 	pruneAttestations(ctx, k)
+}
+
+// In the event the bridge is halted and governance has decided to reset oracle
+// history, we roll back oracle history and reset the parameters
+func unhaltBridge(ctx sdk.Context, k keeper.Keeper, params types.Params) {
+	if params.ResetBridgeState {
+		ctx.Logger().Info("Gov vote passed - Unhalting the bridge!")
+		if params.ResetBridgeNonce < 0 {
+			panic(fmt.Sprintf("Attempted to reset the bridge to nonce %v which is less than 0!", params.ResetBridgeNonce))
+		}
+
+		// TODO: Will int64 to uint64 conversion cause an issue by not capturing the full nonce range?
+		ctx.Logger().Info(fmt.Sprintf("Resetting oracle history to nonce %v", params.ResetBridgeNonce))
+		pruneAttestationsAfterNonce(ctx, k, uint64(params.ResetBridgeNonce))
+		// Reset the parameters now that the bridge is unhalted
+		reset := types.DefaultParams()
+		k.SetResetBridgeNonce(ctx, reset.ResetBridgeNonce)
+		k.SetResetBridgeState(ctx, reset.ResetBridgeState)
+	}
 }
 
 func createValsets(ctx sdk.Context, k keeper.Keeper) {
@@ -397,6 +418,72 @@ func pruneAttestations(ctx sdk.Context, k keeper.Keeper) {
 			if nonce < cutoff {
 				k.DeleteAttestation(ctx, att)
 			}
+		}
+	}
+}
+
+// Iterate over all attestations currently being voted on in order of nonce
+// and prune those that are older than nonceCutoff
+func pruneAttestationsAfterNonce(ctx sdk.Context, k keeper.Keeper, nonceCutoff uint64) {
+	ctx.Logger().Info(fmt.Sprintf("Pruning all attestations after %v", nonceCutoff))
+	attmap := k.GetAttestationMapping(ctx)
+	// We make a slice with all the event nonces that are in the attestation mapping
+	keys := make([]uint64, 0, len(attmap))
+	for k := range attmap {
+		keys = append(keys, k)
+	}
+	// Then we sort it
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+
+	// void and member are necessary for sets to work
+	type void struct{}
+	var member void
+	// TODO: Initialize with the number of validators on cosmos
+	affectedValidatorsSet := make(map[string]void, 100)
+
+	// Decide on the most recent nonce we can actually roll back to
+	lastValidNonce := nonceCutoff
+	lastObserved := k.GetLastObservedEventNonce(ctx)
+	if lastValidNonce < lastObserved {
+		ctx.Logger().Info(
+			fmt.Sprintf("Governance vote passed to reset bridge state back to %v, however event %v has been observed."+
+				" Only resetting history back to nonce %v.", nonceCutoff, lastObserved, lastObserved))
+		// if we have observed any more recent events than the cutoff, roll back as far as possible
+		lastValidNonce = lastObserved
+	}
+
+	// This iterates over all keys (event nonces) in the attestation mapping. Each value contains
+	// a slice with one or more attestations at that event nonce. There can be multiple attestations
+	// at one event nonce when validators disagree about what event happened at that nonce.
+	for _, nonce := range keys {
+		// This iterates over all attestations at a particular event nonce.
+		// They are ordered by when the first attestation at the event nonce was received.
+		// This order is not important.
+		for _, att := range attmap[nonce] {
+			// we delete all attestations earlier than the cutoff event nonce
+			if nonce > lastValidNonce {
+				ctx.Logger().Info(fmt.Sprintf("Deleting attestation at height %v", att.Height))
+				for _, vote := range att.Votes {
+					if _, ok := affectedValidatorsSet[vote]; !ok { // if set does not contain vote
+						affectedValidatorsSet[vote] = member // add key to set
+					}
+				}
+
+				k.DeleteAttestation(ctx, att)
+			}
+		}
+	}
+
+	// Reset the last event nonce for all validators affected by history deletion
+	for vote, _ := range affectedValidatorsSet {
+		val, err := sdk.ValAddressFromBech32(vote)
+		if err != nil {
+			panic(err)
+		}
+		valLastNonce := k.GetLastEventNonceByValidator(ctx, val)
+		if valLastNonce > lastValidNonce {
+			ctx.Logger().Info(fmt.Sprintf("Resetting validator %v's last event nonce from %v to %v", vote, valLastNonce, lastValidNonce))
+			k.SetLastEventNonceByValidator(ctx, val, lastValidNonce)
 		}
 	}
 }
