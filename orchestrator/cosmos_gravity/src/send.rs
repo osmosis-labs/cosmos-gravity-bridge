@@ -13,7 +13,6 @@ use ethereum_gravity::message_signatures::{
 use ethereum_gravity::utils::downcast_uint256;
 use gravity_proto::cosmos_sdk_proto::cosmos::base::abci::v1beta1::TxResponse;
 use gravity_proto::cosmos_sdk_proto::cosmos::tx::v1beta1::BroadcastMode;
-use gravity_proto::gravity::MsgBatchSendToEthClaim;
 use gravity_proto::gravity::MsgConfirmBatch;
 use gravity_proto::gravity::MsgConfirmLogicCall;
 use gravity_proto::gravity::MsgErc20DeployedClaim;
@@ -24,6 +23,7 @@ use gravity_proto::gravity::MsgSendToEth;
 use gravity_proto::gravity::MsgSetOrchestratorAddress;
 use gravity_proto::gravity::MsgValsetConfirm;
 use gravity_proto::gravity::MsgValsetUpdatedClaim;
+use gravity_proto::gravity::{MsgBatchSendToEthClaim, MsgCancelSendToEth};
 use gravity_utils::types::*;
 use std::{collections::HashMap, time::Duration};
 
@@ -368,6 +368,7 @@ pub async fn send_to_eth(
     bridge_fee: Coin,
     fee: Coin,
     contact: &Contact,
+    timeout: Option<Duration>,
 ) -> Result<TxResponse, CosmosGrpcError> {
     let our_address = private_key.to_address(&contact.get_prefix()).unwrap();
     if amount.denom != bridge_fee.denom {
@@ -417,6 +418,43 @@ pub async fn send_to_eth(
     trace!("got optional tx info");
 
     let msg_bytes = private_key.sign_std_msg(&[msg], args, MEMO)?;
+
+    let response = contact
+        .send_transaction(msg_bytes, BroadcastMode::Sync)
+        .await;
+
+    if let Some(duration) = timeout {
+        contact.wait_for_tx(response.unwrap(), duration).await
+    } else {
+        response
+    }
+}
+
+pub async fn cancel_send_to_eth(
+    sender_secret: PrivateKey,
+    transaction_id: u64,
+    fee: Coin,
+    contact: &Contact,
+) -> Result<TxResponse, CosmosGrpcError> {
+    let sender = sender_secret.to_address(&contact.get_prefix()).unwrap();
+
+    let msg_cancel_send_to_eth = MsgCancelSendToEth {
+        sender: sender.to_string(),
+        transaction_id,
+    };
+
+    let fee = Fee {
+        amount: vec![fee],
+        gas_limit: 500_000u64,
+        granter: None,
+        payer: None,
+    };
+
+    let msg = Msg::new("/gravity.v1.MsgSendToEth", msg_cancel_send_to_eth);
+
+    let args = contact.get_message_args(sender, fee).await?;
+
+    let msg_bytes = sender_secret.sign_std_msg(&[msg], args, MEMO)?;
 
     let response = contact
         .send_transaction(msg_bytes, BroadcastMode::Sync)

@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/binary"
 	"fmt"
+	"log"
 	"math/big"
 	"sort"
 	"strconv"
@@ -68,6 +69,7 @@ func (k Keeper) AddToOutgoingPool(ctx sdk.Context, sender sdk.AccAddress, counte
 
 	// set the outgoing tx in the pool index
 	if err := k.setPoolEntry(ctx, outgoing); err != nil {
+		k.decrementID(ctx, types.KeyLastTXPoolID)
 		return 0, err
 	}
 
@@ -170,6 +172,14 @@ func (k Keeper) RemoveFromOutgoingPoolAndRefund(ctx sdk.Context, txId uint64, se
 	return nil
 }
 
+func (k Keeper) appendToUnbatchedTXIndexUnsafe(ctx sdk.Context, fee types.ERC20Token, txID uint64) {
+	store := ctx.KVStore(k.storeKey)
+	idxKey := types.GetFeeSecondIndexKey(fee)
+	var idSet types.IDSet
+	idSet.Ids = append(idSet.Ids, txID)
+	store.Set(idxKey, k.cdc.MustMarshalBinaryBare(&idSet))
+}
+
 // appendToUnbatchedTXIndex add at the end when tx with same fee exists
 func (k Keeper) appendToUnbatchedTXIndex(ctx sdk.Context, tokenContract string, fee types.ERC20Token, txID uint64) {
 	store := ctx.KVStore(k.storeKey)
@@ -183,7 +193,7 @@ func (k Keeper) appendToUnbatchedTXIndex(ctx sdk.Context, tokenContract string, 
 	store.Set(idxKey, k.cdc.MustMarshalBinaryBare(&idSet))
 }
 
-// appendToUnbatchedTXIndex add at the top when tx with same fee exists
+// prependToUnbatchedTXIndex add at the top when tx with same fee exists
 func (k Keeper) prependToUnbatchedTXIndex(ctx sdk.Context, tokenContract string, fee types.ERC20Token, txID uint64) {
 	store := ctx.KVStore(k.storeKey)
 	idxKey := types.GetFeeSecondIndexKey(fee)
@@ -224,57 +234,96 @@ func (k Keeper) removeFromUnbatchedTXIndex(ctx sdk.Context, fee types.ERC20Token
 }
 
 func (k Keeper) setPoolEntry(ctx sdk.Context, val *types.OutgoingTransferTx) error {
+	//log.Printf("Enter setPoolEntry(ctx %v, val %v)", ctx, val)
 	bz, err := k.cdc.MarshalBinaryBare(val)
 	if err != nil {
+		//log.Printf("setPoolEntry: failed to marshal with error %v - val %v", err, val)
 		return err
 	}
 	store := ctx.KVStore(k.storeKey)
 	store.Set(types.GetOutgoingTxPoolKey(val.Id), bz)
+	//log.Printf("setPoolEntry: Successfully set %v", val)
 	return nil
 }
 
 // getPoolEntry grabs an entry from the tx pool, this *does* include transactions in batches
 // so check the UnbatchedTxIndex or call GetPoolTransactions for that purpose
 func (k Keeper) getPoolEntry(ctx sdk.Context, id uint64) (*types.OutgoingTransferTx, error) {
+	//log.Printf("Enter getPoolEntry(ctx %v, id %v)", ctx, id)
 	store := ctx.KVStore(k.storeKey)
-	bz := store.Get(types.GetOutgoingTxPoolKey(id))
+	key := types.GetOutgoingTxPoolKey(id)
+	// log.Printf("getPoolEntry: getting key from store - %v", key)
+	bz := store.Get(key)
+	// log.Printf("getPoolEntry: bytes from store - %v", bz)
 	if bz == nil {
+		// log.Printf("getPoolEntry: ERROR bytes were nil")
 		return nil, types.ErrUnknown
 	}
 	var r types.OutgoingTransferTx
 	k.cdc.UnmarshalBinaryBare(bz, &r)
+	// log.Printf("getPoolEntry: umarshaled bytes - %v", r)
 	return &r, nil
 }
 
 // removePoolEntry removes an entry from the tx pool, this *does* include transactions in batches
 // so you will need to run it when cleaning up after a executed batch
 func (k Keeper) removePoolEntry(ctx sdk.Context, id uint64) {
+	// log.Printf("Enter removePoolEntry(id %v)", id)
 	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.GetOutgoingTxPoolKey(id))
+	// log.Printf("removePoolEntry: deleted id %v", id)
 }
 
 // GetPoolTransactions, grabs all transactions from the tx pool, useful for queries or genesis save/load
 // this does not include all transactions in batches, because it iterates using the second index key
 func (k Keeper) GetPoolTransactions(ctx sdk.Context) []*types.OutgoingTransferTx {
+	// log.Printf("Enter GetPoolTransactions(ctx %v)", ctx)
 	prefixStore := ctx.KVStore(k.storeKey)
+	// log.Printf("GetPoolTransactions: prefixStore %v", prefixStore)
 	// we must use the second index key here because transactions are left in the store, but removed
 	// from the tx sorting key, while in batches
 	iter := prefixStore.ReverseIterator(prefixRange([]byte(types.SecondIndexOutgoingTXFeeKey)))
+
+	// log.Printf("GetPoolTransactions: Iterating unbatched Txs for their ids")
+	// sort.Slice(ids, func(i, j int) bool {
+	// 	return i < j
+	// })
+	// log.Printf("GetPoolTransactions: Got ids %v", ids)
+
 	var ret []*types.OutgoingTransferTx
 	defer iter.Close()
+	// log.Printf("GetPoolTransactions: Beginning iteration")
 	for ; iter.Valid(); iter.Next() {
 		var ids types.IDSet
-		k.cdc.MustUnmarshalBinaryBare(iter.Value(), &ids)
+		value := iter.Value()
+		// log.Printf("GetPoolTransactions: unmarshaling to IDSet - value %v", value)
+		k.cdc.MustUnmarshalBinaryBare(value, &ids)
+		// log.Printf("GetPoolTransactions: unmarshaled to IDSet %v", ids)
 		for _, id := range ids.Ids {
+			// log.Printf("GetPoolTransactions: getting pool entry for %v", id)
 			tx, err := k.getPoolEntry(ctx, id)
+			// log.Printf("GetPoolTransactions: pool entry %v", tx)
 			if err != nil {
-				panic("Invalid id in tx index!")
+				log.Printf("Invalid id %v in tx index!", id)
+				continue
 			}
 			ret = append(ret, tx)
 		}
 	}
 	return ret
 }
+
+// func makeIdSlice(iter db.Iterator, k Keeper) []uint64 {
+// 	slc := []uint64{}
+// 	for ; iter.Valid(); iter.Next() {
+// 		value := iter.Value()
+// 		var ids types.IDSet
+// 		k.cdc.MustUnmarshalBinaryBare(value, &ids)
+// 		slc = append(slc, ids.Ids...)
+// 	}
+
+// 	return slc
+// }
 
 // IterateOutgoingPoolByFee iterates over the outgoing pool which is sorted by fee
 func (k Keeper) IterateOutgoingPoolByFee(ctx sdk.Context, contract string, cb func(uint64, *types.OutgoingTransferTx) bool) {
@@ -378,5 +427,19 @@ func (k Keeper) autoIncrementID(ctx sdk.Context, idKey []byte) uint64 {
 	}
 	bz = sdk.Uint64ToBigEndian(id + 1)
 	store.Set(idKey, bz)
+	return id
+}
+
+func (k Keeper) decrementID(ctx sdk.Context, idKey []byte) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	bz := store.Get(idKey)
+	var id uint64 = 1
+	if bz != nil {
+		id = binary.BigEndian.Uint64(bz)
+		if id == 1 {
+			return id
+		}
+		store.Set(idKey, sdk.Uint64ToBigEndian(id-1))
+	}
 	return id
 }

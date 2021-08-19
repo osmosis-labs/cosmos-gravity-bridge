@@ -16,6 +16,7 @@ use cosmos_gravity::utils::wait_for_cosmos_online;
 use deep_space::coin::Coin;
 use deep_space::Address as CosmosAddress;
 use deep_space::Contact;
+use genesis_panic::genesis_panic_test;
 use gravity_proto::gravity::query_client::QueryClient as GravityQueryClient;
 use happy_path::happy_path_test;
 use happy_path_v2::happy_path_test_v2;
@@ -28,6 +29,7 @@ use valset_stress::validator_set_stress_test;
 
 mod arbitrary_logic;
 mod bootstrapping;
+mod genesis_panic;
 mod happy_path;
 mod happy_path_v2;
 mod orch_keys;
@@ -223,6 +225,18 @@ pub async fn main() {
                 gravity_address,
                 erc20_addresses[0],
                 true,
+            )
+            .await;
+            return;
+        } else if test_type == "GENESIS_PANIC" {
+            info!("Starting Genesis Panic test");
+            genesis_panic_test(
+                &web30,
+                grpc_client,
+                &contact,
+                keys,
+                gravity_address,
+                erc20_addresses[0],
             )
             .await;
             return;

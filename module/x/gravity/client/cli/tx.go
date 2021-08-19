@@ -28,6 +28,7 @@ func GetTxCmd(storeKey string) *cobra.Command {
 
 	gravityTxCmd.AddCommand([]*cobra.Command{
 		CmdSendToEth(),
+		CmdCancelSendToEth(),
 		CmdRequestBatch(),
 		CmdSetOrchestratorAddress(),
 		GetUnsafeTestingCmd(),
@@ -123,6 +124,43 @@ func CmdSendToEth() *cobra.Command {
 				EthDest:   args[0],
 				Amount:    amount[0],
 				BridgeFee: bridgeFee[0],
+			}
+			if err := msg.ValidateBasic(); err != nil {
+				return err
+			}
+			// Send it
+			return tx.GenerateOrBroadcastTxCLI(cliCtx, cmd.Flags(), &msg)
+		},
+	}
+	flags.AddTxFlagsToCmd(cmd)
+	return cmd
+}
+
+func CmdCancelSendToEth() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "cancel-send-to-eth [tx-id]",
+		Short: "Removes an unbatched transaction from the transaction pool",
+		Long: `Removes an unbatched transaction from the transaction pool
+The transaction specified must have been sent by you and must currently not be in a batch`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cliCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			cosmosAddr := cliCtx.GetFromAddress()
+			tx_id, err := sdk.ParseUint(args[0])
+			if err != nil {
+				return sdkerrors.Wrap(err, "transaction id")
+			}
+			if !tx_id.BigInt().IsUint64() {
+				return fmt.Errorf("unable to parse %q into uint64", args[0])
+			}
+
+			// Make the message
+			msg := types.MsgCancelSendToEth{
+				Sender:        cosmosAddr.String(),
+				TransactionId: tx_id.Uint64(),
 			}
 			if err := msg.ValidateBasic(); err != nil {
 				return err

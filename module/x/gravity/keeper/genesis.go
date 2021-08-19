@@ -135,6 +135,7 @@ func InitGenesis(ctx sdk.Context, k Keeper, data types.GenesisState) {
 // ExportGenesis exports all the state needed to restart the chain
 // from the current state of the chain
 func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
+	//log.Printf("Enter ExportGenesis(ctx %v, k %v)", ctx, k)
 	var (
 		p                  = k.GetParams(ctx)
 		calls              = k.GetOutgoingLogicCalls(ctx)
@@ -150,6 +151,24 @@ func ExportGenesis(ctx sdk.Context, k Keeper) types.GenesisState {
 		erc20ToDenoms      = []*types.ERC20ToDenom{}
 		unbatchedTransfers = k.GetPoolTransactions(ctx)
 	)
+
+	// log.Printf(`Enter ExportGenesis, vars are (p %v,
+	// 	 calls %v,
+	// 	 batches %v,
+	// 	 valsets %v,
+	// 	 attmap %v,
+	// 	 vsconfs %v,
+	// 	 batchconfs %v,
+	// 	 callconfs %v,
+	// 	 attestations %v,
+	// 	 delegates %v,
+	// 	 lastobserved %v,
+	// 	 erc20ToDenoms %v,
+	// 	 unbatchedTransfers %v`,
+	// 	p, calls, batches, valsets, attmap,
+	// 	vsconfs, batchconfs, callconfs,
+	// 	attestations, delegates, lastobserved,
+	// 	erc20ToDenoms, unbatchedTransfers)
 
 	// export valset confirmations from state
 	for _, vs := range valsets {

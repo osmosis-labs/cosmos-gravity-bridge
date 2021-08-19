@@ -143,6 +143,7 @@ func NewQuerier(keeper Keeper) sdk.Querier {
 
 		// Pending transactions
 		case QueryPendingSendToEth:
+			ctx.Logger().Error("Handling QueryPendingSendToEth case")
 			return queryPendingSendToEth(ctx, path[1], keeper)
 
 		default:
@@ -518,8 +519,11 @@ func queryERC20ToDenom(ctx sdk.Context, ERC20 string, keeper Keeper) ([]byte, er
 }
 
 func queryPendingSendToEth(ctx sdk.Context, senderAddr string, k Keeper) ([]byte, error) {
+	k.logger(ctx).Error("Enter queryPendingSendToEth(senderAddr %v)", senderAddr)
 	batches := k.GetOutgoingTxBatches(ctx)
+	k.logger(ctx).Error("batches: %v", batches)
 	unbatched_tx := k.GetPoolTransactions(ctx)
+	k.logger(ctx).Error("unbatched_tx: %v", unbatched_tx)
 	sender_address := senderAddr
 	res := types.QueryPendingSendToEthResponse{}
 	for _, batch := range batches {
@@ -534,6 +538,7 @@ func queryPendingSendToEth(ctx sdk.Context, senderAddr string, k Keeper) ([]byte
 			res.UnbatchedTransfers = append(res.UnbatchedTransfers, tx)
 		}
 	}
+	k.logger(ctx).Error("response: %v", res)
 	bytes, err := codec.MarshalJSONIndent(types.ModuleCdc, res)
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())

@@ -120,7 +120,9 @@ message MsgSendToEth {
   ];
 }
 
-message MsgSendToEthResponse {}
+message MsgSendToEthResponse {
+  uint64 transaction_id = 1;
+}
 
 // MsgRequestBatch
 // this is a message anyone can send that requests a batch of transactions to

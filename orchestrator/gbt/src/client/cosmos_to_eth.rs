@@ -89,6 +89,7 @@ pub async fn cosmos_to_eth(args: CosmosToEthOpts, address_prefix: String) {
         bridge_fee.clone(),
         fee,
         &contact,
+        Some(TIMEOUT),
     )
     .await;
     match res {

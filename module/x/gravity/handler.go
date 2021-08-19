@@ -24,7 +24,12 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 			res, err := msgServer.ValsetConfirm(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgSendToEth:
+			ctx.Logger().Info("Handler: Handling case MsgSendToEth")
 			res, err := msgServer.SendToEth(sdk.WrapSDKContext(ctx), msg)
+			ctx.Logger().Info(fmt.Sprintf("Handler: Response is %v", res))
+			return sdk.WrapServiceResult(ctx, res, err)
+		case *types.MsgCancelSendToEth:
+			res, err := msgServer.CancelSendToEth(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgRequestBatch:
 			res, err := msgServer.RequestBatch(sdk.WrapSDKContext(ctx), msg)
@@ -46,9 +51,6 @@ func NewHandler(k keeper.Keeper) sdk.Handler {
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgLogicCallExecutedClaim:
 			res, err := msgServer.LogicCallExecutedClaim(sdk.WrapSDKContext(ctx), msg)
-			return sdk.WrapServiceResult(ctx, res, err)
-		case *types.MsgCancelSendToEth:
-			res, err := msgServer.CancelSendToEth(sdk.WrapSDKContext(ctx), msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 		case *types.MsgValsetUpdatedClaim:
 			res, err := msgServer.ValsetUpdateClaim(sdk.WrapSDKContext(ctx), msg)

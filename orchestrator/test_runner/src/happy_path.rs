@@ -8,6 +8,7 @@ use crate::STARTING_STAKE_PER_VALIDATOR;
 use crate::TOTAL_TIMEOUT;
 use clarity::PrivateKey as EthPrivateKey;
 use clarity::{Address as EthAddress, Uint256};
+use cosmos_gravity::send::TIMEOUT;
 use cosmos_gravity::send::{send_request_batch, send_to_eth};
 use cosmos_gravity::{query::get_oldest_unsigned_transaction_batch, send::send_ethereum_claims};
 use deep_space::address::Address as CosmosAddress;
@@ -325,6 +326,7 @@ async fn test_batch(
         bridge_denom_fee.clone(),
         bridge_denom_fee.clone(),
         contact,
+        Some(TIMEOUT),
     )
     .await
     .unwrap();

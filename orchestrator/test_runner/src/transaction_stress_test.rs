@@ -160,6 +160,7 @@ pub async fn transaction_stress_test(
                 send_fee.clone(),
                 send_fee,
                 contact,
+                Some(TIMEOUT),
             );
             futs.push(res);
         }

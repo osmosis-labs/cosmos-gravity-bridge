@@ -99,6 +99,7 @@ func (k msgServer) ValsetConfirm(c context.Context, msg *types.MsgValsetConfirm)
 // SendToEth handles MsgSendToEth
 func (k msgServer) SendToEth(c context.Context, msg *types.MsgSendToEth) (*types.MsgSendToEthResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
+	ctx.Logger().Info(fmt.Sprintf("Enter SendToEth(msg %v)", msg))
 	sender, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
 		return nil, err
@@ -107,6 +108,7 @@ func (k msgServer) SendToEth(c context.Context, msg *types.MsgSendToEth) (*types
 	if err != nil {
 		return nil, err
 	}
+	ctx.Logger().Info(fmt.Sprintf("SendToEth: txID is %v", txID))
 
 	ctx.EventManager().EmitEvent(
 		sdk.NewEvent(
@@ -116,7 +118,8 @@ func (k msgServer) SendToEth(c context.Context, msg *types.MsgSendToEth) (*types
 		),
 	)
 
-	return &types.MsgSendToEthResponse{}, nil
+	ctx.Logger().Info(fmt.Sprintf("SendToEth: Returning %v, nil", &types.MsgSendToEthResponse{TransactionId: txID}))
+	return &types.MsgSendToEthResponse{TransactionId: txID}, nil
 }
 
 // RequestBatch handles MsgRequestBatch

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -331,8 +332,11 @@ func (k Keeper) GetPendingSendToEth(
 	c context.Context,
 	req *types.QueryPendingSendToEth) (*types.QueryPendingSendToEthResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
+	ctx.Logger().Info(fmt.Sprintf("Enter GetPendingSendToEth(req %+v)", req))
 	batches := k.GetOutgoingTxBatches(ctx)
+	ctx.Logger().Info(fmt.Sprintf("GetPendingSendToEth: batches %v", batches))
 	unbatchedTx := k.GetPoolTransactions(ctx)
+	ctx.Logger().Info(fmt.Sprintf("GetPendingSendToEth: unbatched %v", unbatchedTx))
 	senderAddress := req.SenderAddress
 	var res *types.QueryPendingSendToEthResponse
 
@@ -350,5 +354,6 @@ func (k Keeper) GetPendingSendToEth(
 		}
 	}
 
+	ctx.Logger().Info(fmt.Sprintf("GetPendingSendToEth: Exiting with %v", res))
 	return res, nil
 }

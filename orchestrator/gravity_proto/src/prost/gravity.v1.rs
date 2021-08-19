@@ -49,19 +49,6 @@ pub enum ClaimType {
     LogicCallExecuted = 4,
     ValsetUpdated = 5,
 }
-/// IDSet represents a set of IDs
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct IdSet {
-    #[prost(uint64, repeated, tag="1")]
-    pub ids: ::prost::alloc::vec::Vec<u64>,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct BatchFees {
-    #[prost(string, tag="1")]
-    pub token: ::prost::alloc::string::String,
-    #[prost(string, tag="2")]
-    pub total_fees: ::prost::alloc::string::String,
-}
 /// OutgoingTxBatch represents a batch of transactions going from gravity to ETH
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct OutgoingTxBatch {
@@ -243,6 +230,8 @@ pub struct MsgSendToEth {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSendToEthResponse {
+    #[prost(uint64, tag="1")]
+    pub transaction_id: u64,
 }
 /// MsgRequestBatch
 /// this is a message anyone can send that requests a batch of transactions to
@@ -441,6 +430,8 @@ pub struct MsgSubmitBadSignatureEvidence {
     pub subject: ::core::option::Option<::prost_types::Any>,
     #[prost(string, tag="2")]
     pub signature: ::prost::alloc::string::String,
+    #[prost(string, tag="3")]
+    pub sender: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitBadSignatureEvidenceResponse {
@@ -585,6 +576,19 @@ pub struct GenesisState {
     pub erc20_to_denoms: ::prost::alloc::vec::Vec<Erc20ToDenom>,
     #[prost(message, repeated, tag="12")]
     pub unbatched_transfers: ::prost::alloc::vec::Vec<OutgoingTransferTx>,
+}
+/// IDSet represents a set of IDs
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct IdSet {
+    #[prost(uint64, repeated, tag="1")]
+    pub ids: ::prost::alloc::vec::Vec<u64>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BatchFees {
+    #[prost(string, tag="1")]
+    pub token: ::prost::alloc::string::String,
+    #[prost(string, tag="2")]
+    pub total_fees: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsRequest {

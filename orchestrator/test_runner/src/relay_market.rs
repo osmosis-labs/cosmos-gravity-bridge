@@ -5,10 +5,10 @@ use std::time::{Duration, Instant};
 
 use crate::happy_path::test_erc20_deposit;
 use crate::utils::{check_cosmos_balance, send_one_eth, start_orchestrators, ValidatorKeys};
-use crate::ADDRESS_PREFIX;
 use crate::MINER_PRIVATE_KEY;
 use crate::TOTAL_TIMEOUT;
 use crate::{one_eth, MINER_ADDRESS};
+use crate::{ADDRESS_PREFIX, OPERATION_TIMEOUT};
 use clarity::Address as EthAddress;
 use clarity::PrivateKey as EthPrivateKey;
 use cosmos_gravity::send::send_to_eth;
@@ -161,6 +161,7 @@ async fn test_good_batch(
         bridge_denom_fee.clone(),
         bridge_denom_fee.clone(),
         contact,
+        Some(OPERATION_TIMEOUT),
     )
     .await
     .unwrap();

@@ -6,6 +6,7 @@ use crate::TOTAL_TIMEOUT;
 use crate::{one_eth, MINER_PRIVATE_KEY};
 use crate::{MINER_ADDRESS, OPERATION_TIMEOUT};
 use actix::System;
+use bytes::BytesMut;
 use clarity::{Address as EthAddress, Uint256};
 use clarity::{PrivateKey as EthPrivateKey, Transaction};
 use deep_space::address::Address as CosmosAddress;
@@ -14,11 +15,15 @@ use deep_space::private_key::PrivateKey as CosmosPrivateKey;
 use deep_space::utils::encode_any;
 use deep_space::Contact;
 use futures::future::join_all;
+use gravity_proto::cosmos_sdk_proto::cosmos::base::abci::v1beta1::TxResponse;
 use gravity_proto::cosmos_sdk_proto::cosmos::params::v1beta1::ParamChange;
 use gravity_proto::cosmos_sdk_proto::cosmos::params::v1beta1::ParameterChangeProposal;
 use gravity_proto::gravity::query_client::QueryClient as GravityQueryClient;
 use gravity_utils::types::GravityBridgeToolsConfig;
 use orchestrator::main_loop::orchestrator_main_loop;
+use prost::DecodeError;
+use prost::Message;
+use prost_types::Any;
 use rand::Rng;
 use std::thread;
 use web30::jsonrpc::error::Web3Error;
@@ -311,4 +316,22 @@ pub async fn create_parameter_change_proposal(
     trace!("Gov proposal submitted with {:?}", res);
     let res = contact.wait_for_tx(res, TOTAL_TIMEOUT).await.unwrap();
     trace!("Gov proposal executed with {:?}", res);
+}
+
+/// Decodes a TxResponse
+///
+/// Example:
+/// let response: TxResponse = TxResponse::default();
+/// let message = decode_response::<MsgSendToEthResponse>(response);
+pub fn decode_response<T: Message + Default>(response: TxResponse) -> Result<T, DecodeError> {
+    info!("response is {:?}", response);
+    info!("tx is {:?}", response.tx);
+    let value = response.tx.unwrap().value;
+    return decode_message::<T>(value);
+}
+
+pub fn decode_message<T: Message + Default>(message: Vec<u8>) -> Result<T, DecodeError> {
+    let mut buf = BytesMut::with_capacity(message.len());
+    buf.extend_from_slice(&message);
+    T::decode(buf)
 }
