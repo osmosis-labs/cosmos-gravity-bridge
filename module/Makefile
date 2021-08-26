@@ -1,4 +1,4 @@
-PACKAGES=$(shell go list ./... | grep -v '/simulation')
+PACKAGES=$(shell gotip list ./... | grep -v '/simulation')
 VERSION := $(shell git describe --abbrev=6 --dirty --always --tags)
 COMMIT := $(shell git log -1 --format='%H')
 DOCKER := $(shell which docker)
@@ -50,20 +50,20 @@ BUILD_FLAGS := -ldflags '$(ldflags)' -gcflags="all=-N -l"
 all: install
 
 install: go.sum
-		go install $(BUILD_FLAGS) ./cmd/gravity
+		gotip install $(BUILD_FLAGS) ./cmd/gravity
 
 go.sum: go.mod
 		@echo "--> Ensure dependencies have not been modified"
-		GO111MODULE=on go mod verify
+		GO111MODULE=on gotip mod verify
 
 test:
-	@go test -mod=readonly $(PACKAGES)
+	@gotip test -mod=readonly $(PACKAGES)
 
 # look into .golangci.yml for enabling / disabling linters
 lint:
 	@echo "--> Running linter"
 	@golangci-lint run
-	@go mod verify
+	@gotip mod verify
 
 ###############################################################################
 ###                           Protobuf                                    ###
@@ -161,7 +161,7 @@ proto-tools-stamp:
 	rm -f ${PROTOC_ZIP})
 
 	echo "Installing protoc-gen-gocosmos..."
-	go install github.com/regen-network/cosmos-proto/protoc-gen-gocosmos
+	gotip install github.com/regen-network/cosmos-proto/protoc-gen-gocosmos
 
 	# Create dummy file to satisfy dependency and avoid
 	# rebuilding when this Makefile target is hit twice
