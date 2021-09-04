@@ -28,15 +28,15 @@ func TestOutgoingTxBatchCheckpointGold1(t *testing.T) {
 				DestAddress: "0x9FC9C2DfBA3b6cF204C37a5F690619772b926e39",
 				Erc20Token: &ERC20Token{
 					Amount:   sdk.NewInt(0x1),
-					Contract: erc20Addr,
+					Contract: &EthAddress{erc20Addr},
 				},
 				Erc20Fee: &ERC20Token{
 					Amount:   sdk.NewInt(0x1),
-					Contract: erc20Addr,
+					Contract: &EthAddress{erc20Addr},
 				},
 			},
 		},
-		TokenContract: erc20Addr,
+		TokenContract: &EthAddress{erc20Addr},
 	}
 
 	// TODO: get from params
@@ -58,7 +58,7 @@ func TestOutgoingLogicCallCheckpointGold1(t *testing.T) {
 	require.NoError(t, err)
 
 	token := []*ERC20Token{{
-		Contract: "0xC26eFfa98B8A2632141562Ae7E34953Cfe5B4888",
+		Contract: &EthAddress{"0xC26eFfa98B8A2632141562Ae7E34953Cfe5B4888"},
 		Amount:   sdk.NewIntFromUint64(1),
 	}}
 	call := OutgoingLogicCall{

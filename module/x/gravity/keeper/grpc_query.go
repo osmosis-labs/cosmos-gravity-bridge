@@ -189,7 +189,7 @@ func (k Keeper) OutgoingLogicCalls(
 func (k Keeper) BatchRequestByNonce(
 	c context.Context,
 	req *types.QueryBatchRequestByNonceRequest) (*types.QueryBatchRequestByNonceResponse, error) {
-	if err := types.ValidateEthAddress(req.ContractAddress); err != nil {
+	if err := req.ContractAddress.ValidateBasic(); err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, err.Error())
 	}
 	foundBatch := k.GetOutgoingTXBatch(sdk.UnwrapSDKContext(c), req.ContractAddress, req.Nonce)
@@ -252,8 +252,12 @@ func (k Keeper) DenomToERC20(
 	req *types.QueryDenomToERC20Request) (*types.QueryDenomToERC20Response, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 	cosmosOriginated, erc20, err := k.DenomToERC20Lookup(ctx, req.Denom)
+	if err != nil || erc20.IsNil {
+		return nil, sdkerrors.Wrapf(err, "error when mapping %s to erc20", req.Denom)
+	}
+	ethAddr, _ := erc20.Unwrap()
 	var ret types.QueryDenomToERC20Response
-	ret.Erc20 = erc20
+	ret.Erc20 = ethAddr
 	ret.CosmosOriginated = cosmosOriginated
 
 	return &ret, err
@@ -264,7 +268,11 @@ func (k Keeper) ERC20ToDenom(
 	c context.Context,
 	req *types.QueryERC20ToDenomRequest) (*types.QueryERC20ToDenomResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
-	cosmosOriginated, name := k.ERC20ToDenomLookup(ctx, req.Erc20)
+	ethAddr, err := types.NewEthAddress(req.Erc20)
+	if err != nil {
+		return nil, sdkerrors.Wrapf(err, "invalid erc20 in request", req.Erc20)
+	}
+	cosmosOriginated, name := k.ERC20ToDenomLookup(ctx, ethAddr)
 	var ret types.QueryERC20ToDenomResponse
 	ret.Denom = name
 	ret.CosmosOriginated = cosmosOriginated
@@ -337,7 +345,7 @@ func (k Keeper) GetDelegateKeyByEth(
 	req *types.QueryDelegateKeysByEthAddress) (*types.QueryDelegateKeysByEthAddressResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 	keys := k.GetDelegateKeys(ctx)
-	if err := types.ValidateEthAddress(req.EthAddress); err != nil {
+	if err := req.EthAddress.ValidateBasic(); err != nil {
 		return nil, sdkerrors.Wrap(err, "invalid eth address")
 	}
 	for _, key := range keys {

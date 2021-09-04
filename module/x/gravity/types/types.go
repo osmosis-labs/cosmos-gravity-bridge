@@ -40,11 +40,8 @@ func (b *BridgeValidator) ValidateBasic() error {
 	if b.Power == 0 {
 		return sdkerrors.Wrap(ErrEmpty, "power")
 	}
-	if err := ValidateEthAddress(b.EthereumAddress); err != nil {
+	if err := b.EthereumAddress.ValidateBasic(); err != nil {
 		return sdkerrors.Wrap(err, "ethereum address")
-	}
-	if b.EthereumAddress == "" {
-		return sdkerrors.Wrap(ErrEmpty, "address")
 	}
 	return nil
 }
@@ -81,16 +78,16 @@ func (b BridgeValidators) PowerDiff(c BridgeValidators) float64 {
 	powers := map[string]int64{}
 	// loop over b and initialize the map with their powers
 	for _, bv := range b {
-		powers[bv.EthereumAddress] = int64(bv.Power)
+		powers[bv.EthereumAddress.Address] = int64(bv.Power)
 	}
 
 	// subtract c powers from powers in the map, initializing
 	// uninitialized keys with negative numbers
 	for _, bv := range c {
-		if val, ok := powers[bv.EthereumAddress]; ok {
-			powers[bv.EthereumAddress] = val - int64(bv.Power)
+		if val, ok := powers[bv.EthereumAddress.Address]; ok {
+			powers[bv.EthereumAddress.Address] = val - int64(bv.Power)
 		} else {
-			powers[bv.EthereumAddress] = -int64(bv.Power)
+			powers[bv.EthereumAddress.Address] = -int64(bv.Power)
 		}
 	}
 
@@ -115,7 +112,7 @@ func (b BridgeValidators) TotalPower() (out uint64) {
 func (b BridgeValidators) HasDuplicates() bool {
 	m := make(map[string]struct{}, len(b))
 	for i := range b {
-		m[b[i].EthereumAddress] = struct{}{}
+		m[b[i].EthereumAddress.Address] = struct{}{}
 	}
 	return len(m) != len(b)
 }
@@ -147,7 +144,7 @@ func (b BridgeValidators) ValidateBasic() error {
 }
 
 // NewValset returns a new valset
-func NewValset(nonce, height uint64, members BridgeValidators, rewardAmount sdk.Int, rewardToken string) *Valset {
+func NewValset(nonce, height uint64, members BridgeValidators, rewardAmount sdk.Int, rewardToken *EthAddress) *Valset {
 	members.Sort()
 	var mem []*BridgeValidator
 	for _, val := range members {
@@ -175,11 +172,11 @@ func (v Valset) GetCheckpoint(gravityIDstring string) []byte {
 	}
 
 	// this should never happen, unless an invalid paramater value has been set by the chain
-	err = ValidateEthAddress(v.RewardToken)
+	err = v.RewardToken.ValidateBasic()
 	if err != nil {
 		panic(err)
 	}
-	rewardToken := gethcommon.HexToAddress(v.RewardToken)
+	rewardToken := gethcommon.HexToAddress(v.RewardToken.Address)
 
 	if v.RewardAmount.BigInt() == nil {
 		// this must be programmer error
@@ -194,7 +191,7 @@ func (v Valset) GetCheckpoint(gravityIDstring string) []byte {
 	memberAddresses := make([]gethcommon.Address, len(v.Members))
 	convertedPowers := make([]*big.Int, len(v.Members))
 	for i, m := range v.Members {
-		memberAddresses[i] = gethcommon.HexToAddress(m.EthereumAddress)
+		memberAddresses[i] = gethcommon.HexToAddress(m.EthereumAddress.Address)
 		convertedPowers[i] = big.NewInt(int64(m.Power))
 	}
 	// the word 'checkpoint' needs to be the same as the 'name' above in the checkpointAbiJson
@@ -216,7 +213,7 @@ func (v Valset) GetCheckpoint(gravityIDstring string) []byte {
 }
 
 // WithoutEmptyMembers returns a new Valset without member that have 0 power or an empty Ethereum address.
-func (v *Valset) WithoutEmptyMembers() *Valset {
+func (v *Valset) WithoutEmptyMembers(reward *EthAddress) *Valset {
 	if v == nil {
 		return nil
 	}
@@ -225,7 +222,7 @@ func (v *Valset) WithoutEmptyMembers() *Valset {
 		Members:      make([]*BridgeValidator, 0, len(v.Members)),
 		Height:       0,
 		RewardAmount: sdk.Int{},
-		RewardToken:  "",
+		RewardToken:  reward,
 	}
 	for i := range v.Members {
 		if err := v.Members[i].ValidateBasic(); err == nil {

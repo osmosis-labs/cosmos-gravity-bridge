@@ -140,8 +140,9 @@ func (k msgServer) RequestBatch(c context.Context, msg *types.MsgRequestBatch) (
 	if err != nil {
 		return nil, err
 	}
+	contractAddr, _ := tokenContract.Unwrap()
 
-	batch, err := k.BuildOutgoingTXBatch(ctx, tokenContract, OutgoingTxBatchSize)
+	batch, err := k.BuildOutgoingTXBatch(ctx, contractAddr, OutgoingTxBatchSize)
 	if err != nil {
 		return nil, err
 	}
@@ -288,8 +289,9 @@ func (k msgServer) confirmHandlerCommon(ctx sdk.Context, orchestrator string, si
 	if !found {
 		return sdkerrors.Wrap(types.ErrEmpty, "eth address")
 	}
+	ethAddr, _ := ethAddress.Unwrap()
 
-	err = types.ValidateEthereumSignature(checkpoint, sigBytes, ethAddress)
+	err = types.ValidateEthereumSignature(checkpoint, sigBytes, ethAddr)
 	if err != nil {
 		return sdkerrors.Wrap(types.ErrInvalid, fmt.Sprintf("signature verification failed expected sig by %s with checkpoint %s found %s", ethAddress, hex.EncodeToString(checkpoint), signature))
 	}

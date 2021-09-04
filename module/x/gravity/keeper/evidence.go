@@ -62,9 +62,10 @@ func (k Keeper) checkBadSignatureEvidenceInternal(ctx sdk.Context, subject types
 	if err != nil {
 		return sdkerrors.Wrap(types.ErrInvalid, fmt.Sprintf("signature to eth address failed with checkpoint %s and signature %s", hex.EncodeToString(checkpoint), signature))
 	}
+	ethAddr, _ := ethAddress.Unwrap()
 
 	// Find the offending validator by eth address
-	val, found := k.GetValidatorByEthAddress(ctx, ethAddress)
+	val, found := k.GetValidatorByEthAddress(ctx, ethAddr)
 	if !found {
 		return sdkerrors.Wrap(types.ErrInvalid, fmt.Sprintf("Did not find validator for eth address %s from signature %s with checkpoint %s and GravityID %s", ethAddress, signature, hex.EncodeToString(checkpoint), gravityID))
 	}

@@ -38,7 +38,7 @@ func (b OutgoingTxBatch) GetCheckpoint(gravityIDstring string) []byte {
 	txFees := make([]*big.Int, len(b.Transactions))
 	for i, tx := range b.Transactions {
 		txAmounts[i] = tx.Erc20Token.Amount.BigInt()
-		txDestinations[i] = gethcommon.HexToAddress(tx.DestAddress)
+		txDestinations[i] = gethcommon.HexToAddress(tx.DestAddress.Address)
 		txFees[i] = tx.Erc20Fee.Amount.BigInt()
 	}
 
@@ -52,7 +52,7 @@ func (b OutgoingTxBatch) GetCheckpoint(gravityIDstring string) []byte {
 		txDestinations,
 		txFees,
 		big.NewInt(int64(b.BatchNonce)),
-		gethcommon.HexToAddress(b.TokenContract),
+		gethcommon.HexToAddress(b.TokenContract.Address),
 		big.NewInt(int64(b.BatchTimeout)),
 	)
 
@@ -97,11 +97,11 @@ func (c OutgoingLogicCall) GetCheckpoint(gravityIDstring string) []byte {
 	feeTokenContracts := make([]gethcommon.Address, len(c.Fees))
 	for i, tx := range c.Transfers {
 		transferAmounts[i] = tx.Amount.BigInt()
-		transferTokenContracts[i] = gethcommon.HexToAddress(tx.Contract)
+		transferTokenContracts[i] = gethcommon.HexToAddress(tx.Contract.Address)
 	}
 	for i, tx := range c.Fees {
 		feeAmounts[i] = tx.Amount.BigInt()
-		feeTokenContracts[i] = gethcommon.HexToAddress(tx.Contract)
+		feeTokenContracts[i] = gethcommon.HexToAddress(tx.Contract.Address)
 	}
 	payload := make([]byte, len(c.Payload))
 	copy(payload, c.Payload)
@@ -118,7 +118,7 @@ func (c OutgoingLogicCall) GetCheckpoint(gravityIDstring string) []byte {
 		transferTokenContracts,
 		feeAmounts,
 		feeTokenContracts,
-		gethcommon.HexToAddress(c.LogicContractAddress),
+		gethcommon.HexToAddress(c.LogicContractAddress.Address),
 		payload,
 		big.NewInt(int64(c.Timeout)),
 		invalidationId,

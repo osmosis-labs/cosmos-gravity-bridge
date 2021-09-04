@@ -69,7 +69,7 @@ service Msg {
 message MsgSetOrchestratorAddress {
   string validator    = 1;
   string orchestrator = 2;
-  string eth_address  = 3;
+  EthAddress eth_address  = 3;
 }
 
 message MsgSetOrchestratorAddressResponse {}
@@ -92,7 +92,7 @@ message MsgSetOrchestratorAddressResponse {}
 message MsgValsetConfirm {
   uint64 nonce        = 1;
   string orchestrator = 2;
-  string eth_address  = 3;
+  EthAddress eth_address  = 3;
   string signature    = 4;
 }
 
@@ -111,9 +111,9 @@ message MsgValsetConfirmResponse {}
 // actually send this message in the first place. So a successful send has
 // two layers of fees for the user
 message MsgSendToEth {
-  string                   sender   = 1;
-  string                   eth_dest = 2;
-  cosmos.base.v1beta1.Coin amount   = 3 [
+  string                   sender     = 1;
+  EthAddress               eth_dest   = 2;
+  cosmos.base.v1beta1.Coin amount     = 3 [
     (gogoproto.nullable) = false
   ];
   cosmos.base.v1beta1.Coin bridge_fee = 4 [
@@ -133,7 +133,7 @@ message MsgSendToEthResponse {}
 // can finally submit the batch
 // -------------
 message MsgRequestBatch {
-  string sender = 1;
+  string sender       = 1;
   string denom        = 2;
 }
 
@@ -149,8 +149,8 @@ message MsgRequestBatchResponse {}
 // -------------
 message MsgConfirmBatch {
   uint64 nonce          = 1;
-  string token_contract = 2;
-  string eth_signer     = 3;
+  EthAddress token_contract = 2;
+  EthAddress eth_signer     = 3;
   string orchestrator   = 4;
   string signature      = 5;
 }
@@ -168,7 +168,7 @@ message MsgConfirmBatchResponse {}
 message MsgConfirmLogicCall {
   string invalidation_id    = 1;
   uint64 invalidation_nonce = 2;
-  string eth_signer         = 3;
+  EthAddress eth_signer         = 3;
   string orchestrator       = 4;
   string signature          = 5;
 }
@@ -181,16 +181,16 @@ message MsgConfirmLogicCallResponse {}
 // issued to the Cosmos address in question
 // -------------
 message MsgSendToCosmosClaim {
-  uint64 event_nonce    = 1;
-  uint64 block_height   = 2;
-  string token_contract = 3;
-  string amount         = 4 [
+  uint64 event_nonce         = 1;
+  uint64 block_height        = 2;
+  EthAddress token_contract      = 3;
+  string amount              = 4 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable)   = false
   ];
-  string ethereum_sender = 5;
-  string cosmos_receiver = 6;
-  string orchestrator    = 7;
+  EthAddress ethereum_sender = 5;
+  string cosmos_receiver     = 6;
+  string orchestrator        = 7;
 }
 
 message MsgSendToCosmosClaimResponse {}
@@ -201,7 +201,7 @@ message MsgBatchSendToEthClaim {
   uint64 event_nonce    = 1;
   uint64 block_height   = 2;
   uint64 batch_nonce    = 3;
-  string token_contract = 4;
+  EthAddress token_contract = 4;
   string orchestrator   = 5;
 }
 
@@ -214,7 +214,7 @@ message MsgERC20DeployedClaim {
   uint64 event_nonce    = 1;
   uint64 block_height   = 2;
   string cosmos_denom   = 3;
-  string token_contract = 4;
+  EthAddress token_contract = 4;
   string name           = 5;
   string symbol         = 6;
   uint64 decimals       = 7;
@@ -246,7 +246,7 @@ message MsgValsetUpdatedClaim {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
     (gogoproto.nullable)   = false
   ];
-  string reward_token              = 6;
+  EthAddress reward_token              = 6;
   string orchestrator              = 7;
 }
 

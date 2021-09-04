@@ -116,8 +116,8 @@ $ %s gentx my-key-name 1000000stake 0x033030FEeBd93E3178487c35A9c8cA80874353C9 c
 			}
 
 			ethAddress := args[2]
-
-			if err := gravitytypes.ValidateEthAddress(ethAddress); err != nil {
+			ethAddr, err := gravitytypes.NewEthAddress(ethAddress)
+			if err != nil {
 				return errors.Wrapf(err, "invalid ethereum address")
 			}
 
@@ -177,7 +177,7 @@ $ %s gentx my-key-name 1000000stake 0x033030FEeBd93E3178487c35A9c8cA80874353C9 c
 			delegateKeySetMsg := &gravitytypes.MsgSetOrchestratorAddress{
 				Validator:    sdk.ValAddress(key.GetAddress()).String(),
 				Orchestrator: orchAddress.String(),
-				EthAddress:   ethAddress,
+				EthAddress:   ethAddr,
 			}
 
 			msgs := []sdk.Msg{msg, delegateKeySetMsg}

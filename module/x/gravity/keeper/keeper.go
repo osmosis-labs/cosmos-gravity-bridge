@@ -143,7 +143,7 @@ func (k Keeper) GetDelegateKeys(ctx sdk.Context) []*types.MsgSetOrchestratorAddr
 	iter := store.Iterator(prefixRange(prefix))
 	defer iter.Close()
 
-	ethAddresses := make(map[string]string)
+	ethAddresses := make(map[string]*types.EthAddress)
 
 	for ; iter.Valid(); iter.Next() {
 		// the 'key' contains both the prefix and the value, so we need
@@ -153,8 +153,12 @@ func (k Keeper) GetDelegateKeys(ctx sdk.Context) []*types.MsgSetOrchestratorAddr
 		key := iter.Key()[len(types.EthAddressByValidatorKey):]
 		value := iter.Value()
 		ethAddress := string(value)
+		ethAddr, err := types.NewEthAddress(ethAddress)
+		if err != nil {
+			panic(fmt.Errorf("discovered invalid Eth Address %s in store", ethAddress))
+		}
 		valAddress := sdk.ValAddress(key)
-		ethAddresses[valAddress.String()] = ethAddress
+		ethAddresses[valAddress.String()] = ethAddr
 	}
 
 	store = ctx.KVStore(k.storeKey)
@@ -193,7 +197,7 @@ func (k Keeper) GetDelegateKeys(ctx sdk.Context) []*types.MsgSetOrchestratorAddr
 	// output here is deterministic, eth address chosen for no particular
 	// reason
 	sort.Slice(result[:], func(i, j int) bool {
-		return result[i].EthAddress < result[j].EthAddress
+		return result[i].EthAddress.Address < result[j].EthAddress.Address
 	})
 
 	return result

@@ -241,7 +241,8 @@ func (k Keeper) GetCurrentValset(ctx sdk.Context) *types.Valset {
 		p := uint64(k.StakingKeeper.GetLastValidatorPower(ctx, val))
 
 		if ethAddr, found := k.GetEthAddressByValidator(ctx, val); found {
-			bv := &types.BridgeValidator{Power: p, EthereumAddress: ethAddr}
+			addr, _ := ethAddr.Unwrap()
+			bv := &types.BridgeValidator{Power: p, EthereumAddress: addr}
 			bridgeValidators = append(bridgeValidators, bv)
 			totalPower += p
 		}
@@ -253,13 +254,13 @@ func (k Keeper) GetCurrentValset(ctx sdk.Context) *types.Valset {
 
 	// get the reward from the params store
 	reward := k.GetParams(ctx).ValsetReward
-	var rewardToken string
+	var rewardToken *types.EthAddress
 	var rewardAmount sdk.Int
 	if !reward.IsValid() || reward.IsZero() {
 		// the case where a validator has 'no reward'. The 'no reward' value is interpreted as having a zero
 		// address for the ERC20 token and a zero value for the reward amount. Since we store a coin with the
 		// params, a coin with a blank denom and/or zero amount is interpreted in this way.
-		rewardToken = "0x0000000000000000000000000000000000000000"
+		rewardToken = types.ZeroAddress()
 		rewardAmount = sdk.NewIntFromUint64(0)
 
 	} else {
@@ -286,7 +287,7 @@ func (k Keeper) GetValsetConfirm(ctx sdk.Context, nonce uint64, validator sdk.Ac
 	confirm := types.MsgValsetConfirm{
 		Nonce:        nonce,
 		Orchestrator: "",
-		EthAddress:   "",
+		EthAddress:   nil,
 		Signature:    "",
 	}
 	k.cdc.MustUnmarshalBinaryBare(entity, &confirm)
@@ -317,7 +318,7 @@ func (k Keeper) GetValsetConfirms(ctx sdk.Context, nonce uint64) (confirms []*ty
 		confirm := types.MsgValsetConfirm{
 			Nonce:        nonce,
 			Orchestrator: "",
-			EthAddress:   "",
+			EthAddress:   nil,
 			Signature:    "",
 		}
 		k.cdc.MustUnmarshalBinaryBare(iterator.Value(), &confirm)
@@ -337,7 +338,7 @@ func (k Keeper) IterateValsetConfirmByNonce(ctx sdk.Context, nonce uint64, cb fu
 		confirm := types.MsgValsetConfirm{
 			Nonce:        nonce,
 			Orchestrator: "",
-			EthAddress:   "",
+			EthAddress:   nil,
 			Signature:    "",
 		}
 		k.cdc.MustUnmarshalBinaryBare(iter.Value(), &confirm)

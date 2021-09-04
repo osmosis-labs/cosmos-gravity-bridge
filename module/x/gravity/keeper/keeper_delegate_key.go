@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"time"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -102,25 +103,29 @@ func (k Keeper) GetOrchestratorValidator(ctx sdk.Context, orch sdk.AccAddress) (
 /////////////////////////////
 
 // SetEthAddress sets the ethereum address for a given validator
-func (k Keeper) SetEthAddressForValidator(ctx sdk.Context, validator sdk.ValAddress, ethAddr string) {
+func (k Keeper) SetEthAddressForValidator(ctx sdk.Context, validator sdk.ValAddress, ethAddr *types.EthAddress) {
 	store := ctx.KVStore(k.storeKey)
-	store.Set(types.GetEthAddressByValidatorKey(validator), []byte(ethAddr))
+	store.Set(types.GetEthAddressByValidatorKey(validator), []byte(ethAddr.Address))
 	store.Set(types.GetValidatorByEthAddressKey(ethAddr), []byte(validator))
 }
 
 // GetEthAddressByValidator returns the eth address for a given gravity validator
-func (k Keeper) GetEthAddressByValidator(ctx sdk.Context, validator sdk.ValAddress) (ethAddress string, found bool) {
+func (k Keeper) GetEthAddressByValidator(ctx sdk.Context, validator sdk.ValAddress) (ethAddress *types.OptionalEthAddress, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	ethAddr := store.Get(types.GetEthAddressByValidatorKey(validator))
 	if ethAddr == nil {
-		return "", false
+		return types.NilEthAddress(), false
 	} else {
-		return string(ethAddr), true
+		ethAddr, err := types.NewOptionalEthAddress(string(ethAddr))
+		if err != nil {
+			panic(fmt.Errorf("discovered invalid Eth Address %s stored for validator %v", ethAddr, validator))
+		}
+		return ethAddr, true
 	}
 }
 
 // GetValidatorByEthAddress returns the validator for a given eth address
-func (k Keeper) GetValidatorByEthAddress(ctx sdk.Context, ethAddr string) (validator stakingtypes.Validator, found bool) {
+func (k Keeper) GetValidatorByEthAddress(ctx sdk.Context, ethAddr *types.EthAddress) (validator stakingtypes.Validator, found bool) {
 	store := ctx.KVStore(k.storeKey)
 	valAddr := store.Get(types.GetValidatorByEthAddressKey(ethAddr))
 	if valAddr == nil {

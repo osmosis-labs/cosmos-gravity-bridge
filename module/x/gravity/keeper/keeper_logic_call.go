@@ -20,7 +20,7 @@ func (k Keeper) GetOutgoingLogicCall(ctx sdk.Context, invalidationID []byte, inv
 	call := types.OutgoingLogicCall{
 		Transfers:            []*types.ERC20Token{},
 		Fees:                 []*types.ERC20Token{},
-		LogicContractAddress: "",
+		LogicContractAddress: nil,
 		Payload:              []byte{},
 		Timeout:              0,
 		InvalidationId:       invalidationID,
@@ -122,7 +122,7 @@ func (k Keeper) GetLogicCallConfirm(ctx sdk.Context, invalidationId []byte, inva
 	out := types.MsgConfirmLogicCall{
 		InvalidationId:    "",
 		InvalidationNonce: invalidationNonce,
-		EthSigner:         "",
+		EthSigner:         nil,
 		Orchestrator:      "",
 		Signature:         "",
 	}
@@ -153,7 +153,7 @@ func (k Keeper) IterateLogicConfirmByInvalidationIDAndNonce(
 		confirm := types.MsgConfirmLogicCall{
 			InvalidationId:    "",
 			InvalidationNonce: invalidationNonce,
-			EthSigner:         "",
+			EthSigner:         nil,
 			Orchestrator:      "",
 			Signature:         "",
 		}

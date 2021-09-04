@@ -112,9 +112,11 @@ func NewQuerier(keeper Keeper) sdk.Querier {
 
 		// Batches
 		case QueryBatch:
-			return queryBatch(ctx, path[1], path[2], keeper)
+			addr, _ := types.NewOptionalEthAddress(path[2])
+			return queryBatch(ctx, path[1], addr, keeper)
 		case QueryBatchConfirms:
-			return queryAllBatchConfirms(ctx, path[1], path[2], keeper)
+			addr, _ := types.NewOptionalEthAddress(path[2])
+			return queryAllBatchConfirms(ctx, path[1], addr, keeper)
 		case QueryLastPendingBatchRequestByAddr:
 			return lastPendingBatchRequest(ctx, path[1], keeper)
 		case QueryOutgoingTxBatches:
@@ -139,7 +141,8 @@ func NewQuerier(keeper Keeper) sdk.Querier {
 		case QueryDenomToERC20:
 			return queryDenomToERC20(ctx, path[1], keeper)
 		case QueryERC20ToDenom:
-			return queryERC20ToDenom(ctx, path[1], keeper)
+			addr, _ := types.NewOptionalEthAddress(path[1])
+			return queryERC20ToDenom(ctx, addr, keeper)
 
 		// Pending transactions
 		case QueryPendingSendToEth:
@@ -197,14 +200,18 @@ func queryAllValsetConfirms(ctx sdk.Context, nonceStr string, keeper Keeper) ([]
 
 // allBatchConfirms returns all the confirm messages for a given nonce
 // When nothing found an empty json array is returned. No pagination.
-func queryAllBatchConfirms(ctx sdk.Context, nonceStr string, tokenContract string, keeper Keeper) ([]byte, error) {
+func queryAllBatchConfirms(ctx sdk.Context, nonceStr string, tokenContract *types.OptionalEthAddress, keeper Keeper) ([]byte, error) {
 	nonce, err := types.UInt64FromString(nonceStr)
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, err.Error())
 	}
+	contractAddr, err := tokenContract.Unwrap()
+	if err != nil {
+		return nil, sdkerrors.Wrapf(err, "invalid tokenContract in query %v", tokenContract)
+	}
 
 	var confirms []types.MsgConfirmBatch
-	keeper.IterateBatchConfirmByNonceAndTokenContract(ctx, nonce, tokenContract, func(_ []byte, c types.MsgConfirmBatch) bool {
+	keeper.IterateBatchConfirmByNonceAndTokenContract(ctx, nonce, contractAddr, func(_ []byte, c types.MsgConfirmBatch) bool {
 		confirms = append(confirms, c)
 		return false
 	})
@@ -387,15 +394,19 @@ func lastLogicCallRequests(ctx sdk.Context, keeper Keeper) ([]byte, error) {
 }
 
 // queryBatch gets a batch by tokenContract and nonce
-func queryBatch(ctx sdk.Context, nonce string, tokenContract string, keeper Keeper) ([]byte, error) {
+func queryBatch(ctx sdk.Context, nonce string, tokenContract *types.OptionalEthAddress, keeper Keeper) ([]byte, error) {
 	parsedNonce, err := types.UInt64FromString(nonce)
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, err.Error())
 	}
-	if types.ValidateEthAddress(tokenContract) != nil {
+	contractAddr, err := tokenContract.Unwrap()
+	if err != nil {
+		return nil, sdkerrors.Wrapf(err, "invalid tokenContract in query %v", tokenContract)
+	}
+	if contractAddr.ValidateBasic() != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, err.Error())
 	}
-	foundBatch := keeper.GetOutgoingTXBatch(ctx, tokenContract, parsedNonce)
+	foundBatch := keeper.GetOutgoingTXBatch(ctx, contractAddr, parsedNonce)
 	if foundBatch == nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Can not find tx batch")
 	}
@@ -493,9 +504,10 @@ func queryDenomToERC20(ctx sdk.Context, denom string, keeper Keeper) ([]byte, er
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
 	}
+	ethAddr, _ := erc20.Unwrap()
 	var response types.QueryDenomToERC20Response
 	response.CosmosOriginated = cosmos_originated
-	response.Erc20 = erc20
+	response.Erc20 = ethAddr
 	bytes, err := codec.MarshalJSONIndent(types.ModuleCdc, response)
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
@@ -504,8 +516,12 @@ func queryDenomToERC20(ctx sdk.Context, denom string, keeper Keeper) ([]byte, er
 	}
 }
 
-func queryERC20ToDenom(ctx sdk.Context, ERC20 string, keeper Keeper) ([]byte, error) {
-	cosmos_originated, denom := keeper.ERC20ToDenomLookup(ctx, ERC20)
+func queryERC20ToDenom(ctx sdk.Context, ERC20 *types.OptionalEthAddress, keeper Keeper) ([]byte, error) {
+	ethAddr, err := ERC20.Unwrap()
+	if err != nil {
+		return nil, sdkerrors.Wrapf(err, "invalid ERC20 in query %v", ERC20)
+	}
+	cosmos_originated, denom := keeper.ERC20ToDenomLookup(ctx, ethAddr)
 	var response types.QueryERC20ToDenomResponse
 	response.CosmosOriginated = cosmos_originated
 	response.Denom = denom

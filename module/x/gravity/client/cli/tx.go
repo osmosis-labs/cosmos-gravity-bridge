@@ -107,6 +107,12 @@ func CmdSendToEth() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			ethAddr, err := types.NewEthAddress(args[0])
+			if err != nil {
+				return sdkerrors.Wrap(err, "invalid eth address")
+			}
+
 			cosmosAddr := cliCtx.GetFromAddress()
 
 			amount, err := sdk.ParseCoinsNormalized(args[1])
@@ -125,7 +131,7 @@ func CmdSendToEth() *cobra.Command {
 			// Make the message
 			msg := types.MsgSendToEth{
 				Sender:    cosmosAddr.String(),
-				EthDest:   args[0],
+				EthDest:   ethAddr,
 				Amount:    amount[0],
 				BridgeFee: bridgeFee[0],
 			}
@@ -171,6 +177,7 @@ func CmdRequestBatch() *cobra.Command {
 
 func CmdSetOrchestratorAddress() *cobra.Command {
 	//nolint: exhaustivestruct
+
 	cmd := &cobra.Command{
 		Use:   "set-orchestrator-address [validator-address] [orchestrator-address] [ethereum-address]",
 		Short: "Allows validators to delegate their voting responsibilities to a given key.",
@@ -180,10 +187,15 @@ func CmdSetOrchestratorAddress() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			ethAddr, err := types.NewEthAddress(args[2])
+			if err != nil {
+				return sdkerrors.Wrap(err, "invalid eth address")
+			}
+
 			msg := types.MsgSetOrchestratorAddress{
 				Validator:    args[0],
 				Orchestrator: args[1],
-				EthAddress:   args[2],
+				EthAddress:   ethAddr,
 			}
 			if err := msg.ValidateBasic(); err != nil {
 				return err

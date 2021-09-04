@@ -70,7 +70,7 @@ var (
 	_ paramtypes.ParamSet = &Params{
 		GravityId:                    "",
 		ContractSourceHash:           "",
-		BridgeEthereumAddress:        "",
+		BridgeEthereumAddress:        NilEthAddress(),
 		BridgeChainId:                0,
 		SignedValsetsWindow:          0,
 		SignedBatchesWindow:          0,
@@ -123,7 +123,7 @@ func DefaultParams() *Params {
 	return &Params{
 		GravityId:                    "defaultgravityid",
 		ContractSourceHash:           "",
-		BridgeEthereumAddress:        "",
+		BridgeEthereumAddress:        NilEthAddress(),
 		BridgeChainId:                0,
 		SignedValsetsWindow:          10000,
 		SignedBatchesWindow:          10000,
@@ -199,7 +199,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{
 		GravityId:                    "",
 		ContractSourceHash:           "",
-		BridgeEthereumAddress:        "",
+		BridgeEthereumAddress:        NilEthAddress(),
 		BridgeChainId:                0,
 		SignedValsetsWindow:          0,
 		SignedBatchesWindow:          0,
@@ -310,11 +310,11 @@ func validateBridgeContractAddress(i interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
 	}
-	if err := ValidateEthAddress(v); err != nil {
-		// TODO: ensure that empty addresses are valid in params
-		if !strings.Contains(err.Error(), "empty") {
-			return err
-		}
+	// We need Params to have an optional unset contract address, so we use
+	// the OptionalEthAddress type to accomplish this
+	_, err := NewOptionalEthAddress(v)
+	if !strings.Contains(err.Error(), "empty") {
+		return err
 	}
 	return nil
 }

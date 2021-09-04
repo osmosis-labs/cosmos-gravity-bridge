@@ -7,7 +7,7 @@ option  go_package = "github.com/althea-net/cosmos-gravity-bridge/module/x/gravi
 // BridgeValidator represents a validator's ETH address and its power
 message BridgeValidator {
   uint64 power            = 1;
-  string ethereum_address = 2;
+  EthAddress ethereum_address = 2;
 }
 
 // Valset is the Ethereum Bridge Multsig Set, each gravity validator also
@@ -22,7 +22,7 @@ message Valset {
     (gogoproto.nullable)   = false
   ];
   // the reward token in it's Ethereum hex address representation
-  string reward_token               = 5;
+  EthAddress reward_token               = 5;
   
 }
 
@@ -36,9 +36,18 @@ message LastObservedEthereumBlockHeight {
   uint64 ethereum_block_height = 2;
 }
 
+message EthAddress {
+  string address = 1;
+}
+
+message OptionalEthAddress {
+  bool IsNil = 1;
+	EthAddress Optional = 2;
+}
+
 // This records the relationship between an ERC20 token and the denom
 // of the corresponding Cosmos originated asset
 message ERC20ToDenom {
-  string erc20 = 1;
+  EthAddress erc20 = 1;
   string denom = 2;
 }

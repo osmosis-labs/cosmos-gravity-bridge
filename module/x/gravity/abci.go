@@ -179,7 +179,8 @@ func ValsetSlashing(ctx sdk.Context, k keeper.Keeper, params types.Params) {
 				for _, conf := range confirms {
 					// problem site for delegate key rotation, see issue #344
 					ethAddress, foundEthAddress := k.GetEthAddressByValidator(ctx, val.GetOperator())
-					if foundEthAddress && conf.EthAddress == ethAddress {
+					maybeNilEthAddress, _ := ethAddress.Unwrap() // Only use this if foundEthAddress is true
+					if foundEthAddress && conf.EthAddress == maybeNilEthAddress {
 						found = true
 						break
 					}
