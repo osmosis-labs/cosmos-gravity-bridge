@@ -18,12 +18,6 @@ import (
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	"github.com/althea-net/cosmos-gravity-bridge/module/x/bech32ibc"
-	bech32ibckeeper "github.com/althea-net/cosmos-gravity-bridge/module/x/bech32ibc/keeper"
-	bech32ibctypes "github.com/althea-net/cosmos-gravity-bridge/module/x/bech32ibc/types"
-	"github.com/althea-net/cosmos-gravity-bridge/module/x/bech32ics20"
-	bech32ics20keeper "github.com/althea-net/cosmos-gravity-bridge/module/x/bech32ics20/keeper"
-	bech32ics20types "github.com/althea-net/cosmos-gravity-bridge/module/x/bech32ics20/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
@@ -92,6 +86,12 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/osmosis-labs/bech32-ibc/x/bech32ibc"
+	bech32ibckeeper "github.com/osmosis-labs/bech32-ibc/x/bech32ibc/keeper"
+	"github.com/osmosis-labs/bech32-ibc/x/bech32ics20"
+	bech32ics20keeper "github.com/osmosis-labs/bech32-ibc/x/bech32ics20/keeper"
+	bech32ics20types "github.com/osmosis-labs/bech32-ibc/x/bech32ics20/types"
+	bech32ibctypes "github.comosmosis-labs/bech32-ibc/x/bech32ibc/types"
 
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 
