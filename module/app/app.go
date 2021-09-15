@@ -88,10 +88,10 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/osmosis-labs/bech32-ibc/x/bech32ibc"
 	bech32ibckeeper "github.com/osmosis-labs/bech32-ibc/x/bech32ibc/keeper"
+	bech32ibctypes "github.com/osmosis-labs/bech32-ibc/x/bech32ibc/types"
 	"github.com/osmosis-labs/bech32-ibc/x/bech32ics20"
 	bech32ics20keeper "github.com/osmosis-labs/bech32-ibc/x/bech32ics20/keeper"
 	bech32ics20types "github.com/osmosis-labs/bech32-ibc/x/bech32ics20/types"
-	bech32ibctypes "github.comosmosis-labs/bech32-ibc/x/bech32ibc/types"
 
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 
