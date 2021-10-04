@@ -2,6 +2,7 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 const (
@@ -143,8 +144,8 @@ func GetEthAddressByValidatorKey(validator sdk.ValAddress) []byte {
 // GetValidatorByEthAddressKey returns the following key format
 // prefix              cosmos-validator
 // [0xf9][0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B]
-func GetValidatorByEthAddressKey(ethAddress string) []byte {
-	return append(ValidatorByEthAddressKey, []byte(ethAddress)...)
+func GetValidatorByEthAddressKey(ethAddress EthAddress) []byte {
+	return append(ValidatorByEthAddressKey, []byte(ethAddress.GetAddress())...)
 }
 
 // GetValsetKey returns the following key format
@@ -170,7 +171,11 @@ func GetValsetConfirmKey(nonce uint64, validator sdk.AccAddress) []byte {
 func GetClaimKey(details EthereumClaim) []byte {
 	var detailsHash []byte
 	if details != nil {
-		detailsHash = details.ClaimHash()
+		var err error
+		detailsHash, err = details.ClaimHash()
+		if err != nil {
+			panic(sdkerrors.Wrap(err, "unable to compute claim hash"))
+		}
 	} else {
 		panic("No claim without details!")
 	}
@@ -205,21 +210,21 @@ func GetAttestationKey(eventNonce uint64, claimHash []byte) []byte {
 // prefix	feeContract
 // [0x6][0xc783df8a850f42e7F7e57013759C285caa701eB6]
 // This prefix is used for iterating over unbatched transactions for a given contract
-func GetOutgoingTxPoolContractPrefix(contractAddress string) []byte {
-	return append(OutgoingTXPoolKey, []byte(contractAddress)...)
+func GetOutgoingTxPoolContractPrefix(contractAddress EthAddress) []byte {
+	return append(OutgoingTXPoolKey, []byte(contractAddress.GetAddress())...)
 }
 
 // GetOutgoingTxPoolKey returns the following key format
 // prefix	feeContract		feeAmount     id
 // [0x6][0xc783df8a850f42e7F7e57013759C285caa701eB6][1000000000][0 0 0 0 0 0 0 1]
-func GetOutgoingTxPoolKey(fee ERC20Token, id uint64) []byte {
+func GetOutgoingTxPoolKey(fee InternalERC20Token, id uint64) []byte {
 	// sdkInts have a size limit of 255 bits or 32 bytes
 	// therefore this will never panic and is always safe
 	amount := make([]byte, 32)
 	amount = fee.Amount.BigInt().FillBytes(amount)
 
 	a := append(amount, UInt64Bytes(id)...)
-	b := append([]byte(fee.Contract), a...)
+	b := append([]byte(fee.Contract.GetAddress()), a...)
 	r := append(OutgoingTXPoolKey, b...)
 	return r
 }
@@ -227,8 +232,8 @@ func GetOutgoingTxPoolKey(fee ERC20Token, id uint64) []byte {
 // GetOutgoingTxBatchKey returns the following key format
 // prefix     nonce                     eth-contract-address
 // [0xa][0 0 0 0 0 0 0 1][0xc783df8a850f42e7F7e57013759C285caa701eB6]
-func GetOutgoingTxBatchKey(tokenContract string, nonce uint64) []byte {
-	return append(append(OutgoingTXBatchKey, []byte(tokenContract)...), UInt64Bytes(nonce)...)
+func GetOutgoingTxBatchKey(tokenContract EthAddress, nonce uint64) []byte {
+	return append(append(OutgoingTXBatchKey, []byte(tokenContract.GetAddress())...), UInt64Bytes(nonce)...)
 }
 
 // GetOutgoingTxBatchBlockKey returns the following key format
@@ -242,9 +247,9 @@ func GetOutgoingTxBatchBlockKey(block uint64) []byte {
 // prefix           eth-contract-address                BatchNonce                       Validator-address
 // [0xe1][0xc783df8a850f42e7F7e57013759C285caa701eB6][0 0 0 0 0 0 0 1][cosmosvaloper1ahx7f8wyertuus9r20284ej0asrs085case3kn]
 // TODO this should be a sdk.ValAddress
-func GetBatchConfirmKey(tokenContract string, batchNonce uint64, validator sdk.AccAddress) []byte {
+func GetBatchConfirmKey(tokenContract EthAddress, batchNonce uint64, validator sdk.AccAddress) []byte {
 	a := append(UInt64Bytes(batchNonce), validator.Bytes()...)
-	b := append([]byte(tokenContract), a...)
+	b := append([]byte(tokenContract.GetAddress()), a...)
 	c := append(BatchConfirmKey, b...)
 	return c
 }
@@ -261,8 +266,8 @@ func GetDenomToERC20Key(denom string) []byte {
 	return append(DenomToERC20Key, []byte(denom)...)
 }
 
-func GetERC20ToDenomKey(erc20 string) []byte {
-	return append(ERC20ToDenomKey, []byte(erc20)...)
+func GetERC20ToDenomKey(erc20 EthAddress) []byte {
+	return append(ERC20ToDenomKey, []byte(erc20.GetAddress())...)
 }
 
 func GetOutgoingLogicCallKey(invalidationId []byte, invalidationNonce uint64) []byte {
