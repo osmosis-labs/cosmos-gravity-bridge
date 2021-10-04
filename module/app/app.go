@@ -380,8 +380,9 @@ func NewGravityApp(
 	)
 
 	app.bech32ICS20Keeper = *bech32ics20keeper.NewKeeper(
+		app.ibcKeeper.ChannelKeeper,
 		app.bankKeeper, app.transferKeeper,
-		app.bech32IBCKeeper, appCodec,
+		app.bech32IBCKeeper, app.transferKeeper, appCodec,
 	)
 
 	ibcRouter := porttypes.NewRouter()
@@ -489,7 +490,7 @@ func NewGravityApp(
 			app.bankKeeper,
 		),
 		bech32ibc.NewAppModule(appCodec, app.bech32IBCKeeper),
-		bech32ics20.NewAppModule(appCodec, app.bankKeeper, app.accountKeeper),
+		bech32ics20.NewAppModule(appCodec, app.bech32ICS20Keeper),
 	)
 
 	app.mm.SetOrderBeginBlockers(
