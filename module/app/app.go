@@ -91,7 +91,6 @@ import (
 	bech32ibctypes "github.com/osmosis-labs/bech32-ibc/x/bech32ibc/types"
 	"github.com/osmosis-labs/bech32-ibc/x/bech32ics20"
 	bech32ics20keeper "github.com/osmosis-labs/bech32-ibc/x/bech32ics20/keeper"
-	bech32ics20types "github.com/osmosis-labs/bech32-ibc/x/bech32ics20/types"
 
 	tmversion "github.com/tendermint/tendermint/proto/tendermint/version"
 
@@ -437,11 +436,7 @@ func NewGravityApp(
 			app.accountKeeper,
 			app.bankKeeper,
 		),
-		bank.NewAppModule(
-			appCodec,
-			app.bankKeeper,
-			app.accountKeeper,
-		),
+		bech32ics20.NewAppModule(appCodec, app.bech32ICS20Keeper),
 		capability.NewAppModule(
 			appCodec,
 			*app.capabilityKeeper,
@@ -490,7 +485,6 @@ func NewGravityApp(
 			app.bankKeeper,
 		),
 		bech32ibc.NewAppModule(appCodec, app.bech32IBCKeeper),
-		bech32ics20.NewAppModule(appCodec, app.bech32ICS20Keeper),
 	)
 
 	app.mm.SetOrderBeginBlockers(
@@ -524,7 +518,6 @@ func NewGravityApp(
 		ibctransfertypes.ModuleName,
 		gravitytypes.ModuleName,
 		bech32ibctypes.ModuleName,
-		bech32ics20types.ModuleName,
 	)
 
 	app.mm.RegisterInvariants(&app.crisisKeeper)
@@ -533,7 +526,7 @@ func NewGravityApp(
 
 	app.sm = module.NewSimulationManager(
 		auth.NewAppModule(appCodec, app.accountKeeper, authsims.RandomGenesisAccounts),
-		bank.NewAppModule(appCodec, app.bankKeeper, app.accountKeeper),
+		bech32ics20.NewAppModule(appCodec, app.bech32ICS20Keeper),
 		capability.NewAppModule(appCodec, *app.capabilityKeeper),
 		gov.NewAppModule(appCodec, app.govKeeper, app.accountKeeper, app.bankKeeper),
 		mint.NewAppModule(appCodec, app.mintKeeper, app.accountKeeper),

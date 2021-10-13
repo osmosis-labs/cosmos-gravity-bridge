@@ -9,7 +9,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/osmosis-labs/bech32-ibc v0.0.0-20211004171054-b5055683d345
+	github.com/osmosis-labs/bech32-ibc v0.0.0-20211013141919-b83820facfe8
 	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
 	github.com/regen-network/cosmos-proto v0.3.1
@@ -26,3 +26,5 @@ require (
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.2-alpha.regen.4
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
+
+replace github.com/cosmos/cosmos-sdk => github.com/osmosis-labs/cosmos-sdk v0.42.10-0.20211013141003-de25c0edf532
